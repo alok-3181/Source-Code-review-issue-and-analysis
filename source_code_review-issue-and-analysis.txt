@@ -1,0 +1,689 @@
+
+=================================================================================================
+
+    Access Control: Database
+    Access Specifier Manipulation
+    Build Misconfiguration: External Maven Dependency
+    ClassLoader Manipulation: Struts
+    Code Correctness: Double-Checked Locking
+    Cookie Security:  HTTPOnly not Set on Application Cookie
+    Cross-Site Scripting (XSS): Persistent
+    Cross-Site Scripting (XSS): Reflected
+    Cross-Site Scripting (XSS): Poor Validation
+    Dynamic Code Evaluation: Unsafe Deserialization (Input Validation and Representation, Structural)
+        Additional/Alternative Content for JSF Code:
+    Header Manipulation (Input Validation and Representation, Data Flow)
+    Insecure Randomness (JQuery)
+    Insecure Transport
+    Insecure Transport: Mail Transmission (Security Features, Configuration)
+    J2EE Bad Practice: Non-Serializable Object Stored in Session
+    J2EE Misconfiguration: Excessive Session Timeout
+    J2EE Misconfiguration: Missing Error Handling
+    JSON Injection
+    Log Forging
+    Mass Assignment: Insecure Binder Configuration
+    Null Dereference
+    Password Management: Hardcoded Password (Security Features, Semantic)
+    Password Management: Null Password
+    Password Management: Password in Comment
+    Password Management: Password in Configuration File
+    Path Manipulation (Input Validation and Representation)
+    Poor Error Handling: Overly Broad Catch/Throws
+    Poor Error Handling: Empty Catch Block
+    Poor Error Handling: Return Inside Finally
+    Poor Logging Practice: Logger Not Declared Static Final
+    Poor Logging Practice: Use of System Output Stream
+    Portability Flaw: Locale Dependent Comparison
+    Privacy Violation: Autocomplete
+    Privacy Violation: Logging Confidential Information
+    Privacy Violation: Heap Inspection
+    Privacy Violation: Security Features, Data Flow
+    Race Condition: Singleton Member Field
+    Session Fixation (Time and State, Control Flow)
+    SQL Injection
+    Struts:  Erroneous validate() Method 
+    System Information Leak 
+    System Information Leak:  Internal
+    System Information Leak: HTML Comment in JSP
+    Unreleased Resource: Streams
+    Unreleased Resource: Database 
+    Weak XML Schema:  Unbounded Occurrences
+    XML External Entity Injection
+    
+    =====
+    XSS- reflected (if on c:out or escapexml=false)
+    Open Redirect
+    Code Correctness: Double-Checked Locking
+    Race-condition: singleton
+    XSS: Reflected
+    Insecure Transport
+    Code Correctness: Double-Checked Locking
+    
+    ------------------------------------------XXX-------------------------------------------------
+
+Access Control: Database
+Analysis: Suspicious or Exploitable
+
+It looks like the code executes an SQL statement that contains, or may contain an attacker-controlled primary key, thereby enabling the attacker to gain unauthorized access to non-public company or customer records.
+I could not find where the application may be validating that authenticated user is authorized for the queried data.
+(for some use cases) I understand that validation may be happening outside this application on the mainframe or some other stored procedure -- but could not find where the ID was passed.  I would need you help documenting evidence of this if it is the case here.
+So, am I viewing this correctly?
+Access Specifier Manipulation
+Analysis: Suspicious or Exploitable
+
+This is an elevated risk practice.  The AccessibleObject API allows the programmer to get around the access control checks provided by Java access specifiers.  In particular it enables the programmer to allow a reflected object to bypass Java access controls and in turn change the value of private fields or invoke private methods, behaviors that are normally disallowed.
+
+I believe that you should carefully review the use case here and explore options with your team before deciding whether to refactor this code or continue this practice.
+
+ 
+
+ASP.NET Bad Practices: Non-Serializable Object Stored in Session
+Analysis: Bad Practice
+
+The code stores a non-serializable object as an HttpSession attribute, which can damage application reliability. 
+This is primarily an application reliability issue. It may be lower priority than some other categories of issues in this assessment.
+
+See the Recommendations tab for a couple approaches to adding explicit, safe serialization support for these session variables.
+Build Misconfiguration: External Maven Dependency
+Analysis: Not a Problem
+
+For development across company today (2016), it appears that using the standard set or xml schemas to define the structure of Maven pom.xml files is within our organization's risk appetite.  This may not always be so.  If the trustworthiness of these external entities evolves toward elevated risk, these external xml schema sources may no longer represent an acceptable risk.  Example set:
+
+    <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+ClassLoader Manipulation: Struts
+Analysis: Suspicious
+
+If the application is running under Apache Tomcat, the risk may be diminished, but not eliminated by running our application in a company-owned-and-managed WebSphere-hosted JVM.  At a minimum, the application needs to use the custom v1.2.9.1 and v1.3.10.1 versions Struts.  That said, it seems prudent to implement a servlet filter analogous to that outlined in the "Recommendations" tab.
+
+Beyond this specific Struts 1 ClassLoader Manipulation issue and from a legacy management perspective, because it is unsupported and has a legacy of security vulnerabilities continuing to use Struts 1 seems increasingly risk inappropriate.  Work with your software architect, security officer, and other relevant parties to build a plan for replacing Struts 1 with something more current/less vulnerable.
+
+See Struts v1.x Classloader Manipulation Vulnerability (https://docs.company.com/display/JDB/Struts+v1.x+Classloader+Manipulation+Vulnerability) for more information about this specific vulnerability.
+
+See CVEDetails (https://www.cvedetails.com/version-list/45/6117/2/Apache-Struts.html?sha=27281fae084878facce8be2a1ad62e8ac2e1be44&order=1&trc=83) for more information about the growing list of serious Struts 1 vulnerabilities.
+Code Correctness: Double-Checked Locking
+Analysis: Suspicious or Bad Practice
+
+SCR is hard on these.
+
+(for some use cases) They have a code example in the Details tab that appears to match ours, and recommend alternative logic in the Recommendations tab to reduce the probability of logic- and state-related attacks.
+
+Please review the SCR content and get back to the ISR SCSA team if the SCR guidance does not appear to apply to our use cases.
+Cookie Security:  HTTPOnly not Set on Application Cookie
+Analysis: Exploitable
+
+The httpCookies.httpOnlyCookies property should always be set to "true" in the Web.config to prevent XSS and stolen cookies.
+
+Please update the web.config to include this setting.
+
+Example:
+
+  <configuration>
+      <system.web>
+         <httpCookies httpOnlyCookies="true">
+         ..... 
+Cross-Site Scripting (XSS): Persistent
+Analysis: Suspicious or Exploitable
+
+This issuess appear to send unvalidated data to a web browser which can result in the browser executing malicious code.
+In this instance the persistent (also known as Stored) XSS attack string(s) come from a database or other back-end datastore.
+As usual with XSS risks, ensure that validation occurs in the correct places and checks for the correct properties to effectively resist attack.
+Is there evidence that that data has been made safe before reaching this code?
+Cross-Site Scripting (XSS): Reflected
+Analysis: Exploitable
+
+Without any input validation these findings are exploitable by an attacker.  An effective way to mitigate reflected XSS risks is to validate inputs.
+
+Consider utilizing escapeXml(), URLEncoder.encode() or encodeForHTML() from the OWASP ESAPI libray to remove malicious content.  Also, creating a whitelist of safe characters that are allowed to appear in the log entries and only accept input composed of the characters in the approved set. 
+
+https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet#A_Positive_XSS_Prevention_Mode
+Cross-Site Scripting (XSS): Poor Validation
+Analysis: Suspicious
+
+Since the app is using JSF, <h:outputText/> by default has the escape attribute set to True. By using this tag to display outputs, the majority of the XSS vulnerabilities are mitigated.
+
+However, the source of the data for the output (i.e., <h:inputTextarea/> or <h:inputText/>), doesn't appear to validate input.  Most of the fields have a maxLength applied, which is good.  Others do not or, like comments, are too large for the maxLength to have much of an impact.  Please consider adding input validation, like the examples illustrated in the shared  RegEx library: Regular Expressions at https://docs.company.com/display/JDB/Regular+Expressions
+Dynamic Code Evaluation: Unsafe Deserialization (Input Validation and Representation, Structural)
+Analysis: Suspicious or Exploitable
+
+An application that accepts serialized objects and deserializes them without performing risk-appropriate validation may be vulnerable to a range of elevated risk attack types up to and including remote anonymous arbitrary code execution. 
+The most durable approach is to resist deserializing untrusted data without first validating the contents of the object stream.  If code waits until after deserialization to perform validation, the damage/attack can have already occurred.
+
+In order to validate classes being deserialized, we recommend using the look-ahead deserialization pattern (Ref: https://www.ibm.com/developerworks/library/se-lookahead/, https://www.securecoding.cert.org/confluence/display/java/SER12-J.+Prevent+deserialization+of+untrusted+data and https://www.owasp.org/index.php/Deserialization_of_untrusted_data). 
+
+There is a potentially-useful Java source code sample unter the "Compliant Solution" at "SER12-J. Prevent deserialization of untrusted data" https://www.securecoding.cert.org/confluence/display/java/SER12-J.+Prevent+deserialization+of+untrusted+data and if that is not a good fit for your use case, "SEC58-J. Deserialization methods should not perform potentially dangerous operations." https://www.securecoding.cert.org/confluence/display/java/SEC58-J.+Deserialization+methods+should+not+perform+potentially+dangerous+operations
+
+The Developer Support team maintains a page devoted to this issue at: https://docs.company.com/display/JDB/Java+Deserialization+Vulnerabilities, and ISR has some supporting information at: https://docs.company.com/display/JDB/Additional+Guidance
+
+For additional context, see: "CWE-502: Deserialization of Untrusted Data" http://cwe.mitre.org/data/definitions/502.html and some additional candidate source code at: https://www.contrastsecurity.com/security-influencers/java-serialization-vulnerability-threatens-millions-of-applications
+Additional/Alternative Content for JSF Code:
+
+If the vulnerable code is part of JSF client-side session handling, we recommend that you switch from using JSF with client-side session storage to server-side session storage.  This is a high-priority change.  Attacking JSF applications that use client-side session storage is easy and effective.  Get this change into your planning as soon as is practical.
+
+See: JSF Deserialization Vulnerability at  https://docs.company.com/display/JDB/JSF+Deserialization+Vulnerability and Additional information at https://docs.company.com/display/JDB/Additional+Guidance
+
+ 
+
+JSF Deserialization Vulnerability
+Header Manipulation (Input Validation and Representation, Data Flow)
+Analysis: Exploitable or Suspicious
+
+Unvalidated data appears to be consumed in an HTTP response header allowing an attacker to pass malicious data into application. As a result the application may be susceptible to a number of attacks.
+
+Always assume input is evil. Please validate all input to prevent vulnerabilities in your application.
+
+We recommend creating a white-list of acceptable characters or strings that are allowed to appear in the response header and only accept input composed of those characters/strings.
+Insecure Randomness (JQuery)
+Analysis: Not an Issue
+
+We often find the jquery 'rand' being used to help build web page menu components.  In that context, it is not being used with sensitive resources or as part of a crypto-scheme.  In that context, it is not an 'Insecure Randomness' issue.
+Analysis: Vulnerable
+
+Sometimes we find 'rand' being used with sensitive resources or as part of a crypto-scheme.  In that context, we need to ensure that we introduce and maintain a risk-appropriate level of entropy.
+Insecure Transport
+Analysis: Bad Practice and Exploitable
+
+This can occur when a developer codes a call to HttpHost() using an unencrypted protocol (cleartext HTTP) instead of an encrypted protocol to communicate with the server.  The mitigation is to generally to employ HTTPS.
+Insecure Transport: Mail Transmission (Security Features, Configuration)
+Analysis: Bad Practice and Exploitable
+
+Establishing an clear text connection to a mail server allows an attacker to carry out a man-in-the-middle attack and read all the mail transmissions.
+
+Any clear-text email idiom needs to be evolved to authenticated & encrypted transport.  For Spring Framework environments, see "Emailing - the Spring way." for an extended discussion of this topic: http://learningviacode.blogspot.com/2013/01/emailing-spring-way.html
+J2EE Bad Practice: Non-Serializable Object Stored in Session
+Analysis: Bad Practice
+
+The method stores a non-serializable object as an HttpSession attribute, which can damage application reliability.   
+
+To improve application reliability and performance a J2EE app can make use of multiple JVMs by implementing the Serializable interface for the values stored as attributes in the session.
+
+Typically the easiest way to fix this problem is to implement Serializable on the object(s) flagged by SCR.
+
+For example:
+    public class MyAwesomeClass implements java.io.Serializable {
+      ...
+      ...
+J2EE Misconfiguration: Excessive Session Timeout
+Analysis: Bad Practice
+
+A broad session timeout gives attackers more time to potentially compromise user accounts.
+
+Set a session timeout that is reasonable for the application (i.e., 20 minutes or less depending on risk exposure), allowing users to interact with the application over a period of time while minimizing the attack window.
+J2EE Misconfiguration: Missing Error Handling
+Analysis: Bad Practice
+
+One of the biggest concerns about exception handling is failing to handle the exception.  Once the exception reaches the boundary of the application and enters the container, the specific container/application configuration in use determines what semantics are applied in handling that exception.  Many times a standard error page is applied and the exception stack trace is displayed on the screen, giving a hostile party a lot of information about the system that can be used to enhance their chances of attack success.
+
+Provide error handlers for at least java.lang.Throwable (catches any Java exceptions or errors), and provide more specific handlers for individual exceptions and http error codes (i.e., 404 and 500).  From a security perspective, catching Throwables and the specified error codes provides much of the protection you need.
+
+ Note: error.jsp page should be generic and provide a canned response message of a type that contains no detail that could help an attacker fingerprint the app in any way.
+JSON Injection
+Analysis: Suspicious
+
+Unvalidated data is written into JSON. When writing data to JSON all serialization should be performed using a safe serialization function that delimits untrusted data within single or double quotes and escapes special characters.
+
+For example, Apache commons lang now supports escaping JSON:
+
+  import org. apache.commons.lang3.StringEscapeUtils;
+  StringEscapeUtils.escapeJson("your string")
+
+Additional References:
+https://stackoverflow.com/questions/3020094/how-should-i-escape-strings-in-json
+https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/StringEscapeUtils.html#escapeJson(java.lang.String)
+Log Forging
+Analysis: Exploitable
+
+Unvalidated data is written to the log files and is therefore exploitable.  At company, the primary interface to application logs for many roles is a browser.  As a result, hostile content that is simply passed along by application logging to the application log will can execute on a trusted company-internal endpoint ? a serious violation of our infrastructure/operations.  There are also a broad range of attacker techniques used to help "cover their trail" that involve (in part) attempting to inject special characters into log files ? for example long series of backspace characters, which can slow down attempts to discover "what the attacker did" after an incident is initially identified.  Is access to the log files limited to only those needing it? An additional concern is an attacker gaining access to the logs and obtaining important information.
+
+Please review the recommendations provided by SCR for examples of how to resolve these issues.
+
+OR
+
+In this instance, the hostile party would attack through an application configuration file.
+When company Financial Group owns & operates all facets of our data center and the activities that occur inside, this represents a given risk load. That risk load will increase substantially if this code were running in 3rd party infrastructure, and would increase even more if it were hosted in a range of typical "cloud" environments (where the validated and monitored protections are few, too often weak, and sometimes delivered on a "faith-only" relationship).
+
+I don't believe it is risk-appropriate to trust configuration file input (or any other file...) in a shared, 3rd party environment. Because "cloud fever" seems to be prevalent in so many of our organizations, it seems like now is the time to begin adding sanity-checking validations to code like this.
+Mass Assignment: Insecure Binder Configuration
+Analysis: Suspicious (more of an "intriguing" issue than a common one)
+
+The framework binder used for binding the HTTP request parameters to the model class has not been explicitly configured to allow/disallow certain attributes. Any attribute in the bound class, or nested classes, will be automatically bound to the HTTP request parameters.
+
+As a result, malicious users will be able to assign a value to any attribute in bound or nested classes, even if they are not exposed to the client through web forms or API contracts.
+
+Please review the SCR Recommendations, specifically examples 2 and 3 since this app uses Spring, as they contain a variety of suggestions for fixing this issue.
+Null Dereference
+Analysis: Bad Practice
+
+A null-pointer dereference takes place when a pointer with a value of NULL is used as though it pointed to a valid memory area.
+
+An attacker who intentionally triggers a null pointer dereference can use the resulting exception to bypass security logic or to cause the application to reveal debugging information to use in an attack.
+
+We often set these"suspicious" because there may be additional layers of resistance to this control-flow attack. Regardless, implementing the SCR recommendation seems like the best approach to dealing with this issue: Implement careful checks before dereferencing objects that might be null. When possible, abstract null checks into wrappers around code that manipulates resources to ensure that they are applied in all cases and to minimize the places where mistakes can occur.
+Password Management: Hardcoded Password (Security Features, Semantic)
+Analysis: Bad Practice and Exploitable
+
+Hardcoded passwords can compromise system security ways that cannot be easily remedied.
+
+Hardcoding values (especially in the presence of the full database connection information) is no longer risk-appropriate.  For Java apps, utilize Access ID Manager (AIM) or a well-protected properties (or other configuration) file managed in a manner that there is effective separation of duties (where developers and others dealing with code, are not able to see or access the runtime environment password value) --> see the discussion in the section "Password in Configuration File" above.
+
+EXTERNAL REFERENCE: 
+"Alternatives to Hard-Coding Passwords." https://security.web.cern.ch/security/recommendations/en/password_alternatives.shtml
+
+OR
+
+The practice of hard coding passwords in source code is susceptible to a range of attacks.  Over time source code lands on a population of developer (and other) endpoints, where the threat of malware-enabled attack is elevated.  The population of those granted access to the source is also large enough to include hostile parties from time to time.  In either case, the production environment (and Pilot as well if it contains material production non-public data) passwords should not be exposed beyond a formal "need to know" and are classified as confidential.
+
+For Java apps, utilize Access ID Manager (AIM) or a well-protected properties (or other configuration) file managed in a manner that there is effective separation of duties (where developers and others dealing with code, are not able to see or access the run-time production environment password value ? the same holds true for Pilot environments if they contain material amounts of production data).
+
+**In this case, the encryption is performed using org.jasypt.encryption.pbe.StandardPBEStringEncryptor and algorithm="PBEWithMD5AndDES."
+
+MD5 with DES is no longer a risk-reasonable encryption choice for most financial services use cases.
+Also, the encryption key has limited entrophy, so limited, that it is a viable target for "guessing" and for modern automated attacks. It should be replaced with a value having high entropy.
+
+"DES has a 56-bit key and 64-bit block size and so is not considered secure by today's standards. It is susceptible to linear [42] and differential cryptanalysis [225]."
+FROM: page 29, http://share.company.com/sites/securityarch/References/Algorithms-%20key%20size%20and%20parameters%20report%20%20-%202014.pdf
+
+Recommend AES (Advanced Encryption Standard, sometimes called 'Rijndael') or Camellia.
+FROM: pages 27-28, http://share.company.com/sites/securityarch/References/Algorithms-%20key%20size%20and%20parameters%20report%20%20-%202014.pdf
+
+"Despite being widely deployed the MD-5 hash function should not be considered secure. Collisions can be found within seconds on a modern desktop computer. The literature on the collision weakness of MD-5 and its impact in various scenarios is wide [218, 313, 331{333]. Preimage resistance can also be broken in time 2124:4 [312]."
+"we do not propose usage with MD-5 even for legacy applications"
+FROM: Pages 31 & 49, http://share.company.com/sites/securityarch/References/Algorithms-%20key%20size%20and%20parameters%20report%20%20-%202014.pdf
+
+Recommend "SHA-2 256, 384, 512" (not SHA-2 224) in stead of MD5.
+FROM: page 30, http://share.company.com/sites/securityarch/References/Algorithms-%20key%20size%20and%20parameters%20report%20%20-%202014.pdf
+
+REFERENCES:
+Encryption Algorithm Selection Guide
+http://share.company.com/sites/src/Minimum%20Standards%20and%20Guidance/Encryption%20Algorithm%20Selection%20Guide%20-%20April%202010.pdf
+
+"Algorithms, key size and parameters report -- 2014." (Nov. 2014)
+European Union Agency for Network and Information Security
+www.enisa.europa.eu
+https://www.enisa.europa.eu/activities/identity-and-trust/library/deliverables/algorithms-key-size-and-parameters-report-2014
+Password Management: Null Password
+Analysis: Bad Practice
+
+Assigning a null string to a password variable is insecure and never a good idea.
+
+Initialize the variable with a random value like "filler pwd" instead of a null or empty string. 
+
+Instead of...
+
+  String password = "";
+
+use...
+
+  String password = "app pwd";
+Password Management: Password in Comment
+Analysis: Not an Issue
+
+This is simply the term "password" in a comment, above risk-appropriate code.  It is an immaterial risk at this time.
+Analysis: Bad Practice
+
+Using the term "password" in a comment above elevated-risk code enhances the likelihood that the elevated-risk code will be identified and attacked.  This comment should not include the term "password" unless it is essential for effective maintenance of the code over time.
+Password Management: Password in Configuration File
+Analysis: Exploitable
+
+Storing a plain-text password in a configuration file allows anyone who can read the file access to the password-protected resource. Good password management guidelines require that a password never be stored in plaintext.
+
+The password should be entered by an administrator when the system starts. If that approach is impractical, a less secure but often adequate solution is to obfuscate the password and scatter the de-obfuscation material around the system so that an attacker has to obtain and correctly combine multiple system resources to decipher the password.
+
+If this use case involves Encrypted Passwords
+
+Utilizing an external system like Access ID Manager (AIM) for credentials is a typical practice at company for Java applications.  If using AIM is not possible, and since the password is not in plain-text, limiting access to the properties file would be a necessary next step. In other words, consider storing the password in an external properties file, which has very limited access, on the run-time environment instead of in the code, which is stored in source control.
+
+ OR
+
+Encryption keys should not be hardcoded because the scope of authorized access to source code is far broader than should be for encryption keys and/or passwords. And passwords should generally be obfuscated and managed in an external source. Access ID Manager (AIM) is a 'standard' location for credential passwords. Storing passwords in plaintext anywhere on the system allows anyone with sufficient permissions to read and potentially misuse the password.
+
+Managing passwords like this in an external system like AIM (or, if that is not possible/practical, in properties files having severely-constrained access on run-time platforms), along with high-confidence processes for handling those run-time passwords (as opposed to development & test passwords), might be the most appropriate approach here.
+
+If this use case involves Encrypted or Clear-Text Passwords
+Using the config file approach requires that the files have severely-constrained access controls on the run-time platforms along with high-confidence processes for handling the secrets throughout their life-cycle(s). This approach may be within some company organization's risk appetite when the entire server/storage environments for the application are running on physical servers within company Financial Group data centers. It is not, though, risk-appropriate for 3rd-party hosting arrangements, and must not be employed in any "cloud" environments.
+
+Keep this in mind whenever there are discussions about the hosting environment for this application.
+
+If this use case involves 'simple' Passwords
+
+Also, the password has limited entrophy, so limited, that it is a viable target for "guessing" and for modern automated attacks. It should be replaced with a value having high entropy, and conforming with company password policies.
+
+For more password-strength detail see: https://inside.thecompany.net/is/support/infosec/riskmgmt/passwords.shtm
+Path Manipulation (Input Validation and Representation)
+Analysis: Bad Practice, Suspicious or Exploitable
+
+Storing a sensitive path/filename in a configuration file allows anyone who can modify the file to access or modify otherwise protected files.
+This type of configuration manipulation allows an attacker to point the run-time application to files under their control, which may lead to unauthorized access to bulk non-public information.
+In the short term, this path/file in configuration file idiom is likely to be within most company organization's risk appetite when the entire server/storage environments for both the file system server and the application are running on physical servers within company Financial Group data centers. It is not, though, risk-appropriate for any 3rd-party hosting arrangements, and must not be employed in any "cloud" environments.
+Keep this in mind whenever there are discussions about the hosting environment for this application.
+Poor Error Handling: Overly Broad Catch/Throws
+
+ 
+Poor Error Handling: Empty Catch Block
+Analysis: Suspicious or Exploitable
+
+Just about every serious attack on a software system begins with the violation of a programmer's assumptions.
+
+Two untrustworthy assumptions are, "this method call can never fail" or/and "it doesn't matter if this call fails."
+
+At a minimum, log the fact that the exception was thrown so that it will be possible to come back later and make sense of the resulting application behavior. Consider either aborting the current operation, or performing some alternative operation to compensate for risks associated with the failure of the previous operation.
+
+See the SCR Recommendations tab for code to implement a minimal approach.
+Poor Error Handling: Return Inside Finally
+Analysis: Suspicious or Bad Practice
+
+Just about every serious attack on a software system begins with the violation of a programmer's assumptions.
+
+In this case, "I understand the failure conditions..."  Using finally to return logic can result in exceptions being discarded (See SCR's Example in the Issue Details tab).  Consider refactoring this code using guidance on the SCR Recommendations tab.
+Poor Logging Practice: Logger Not Declared Static Final
+Analysis: Bad Practice
+
+A good practice is sharing a single logger object between all of instances of a particular class for the duration of the program.
+
+Please declare this logger to be static and final (i.e., private final static....).
+
+A stack trace can reveal
+
+    what encryption algorithm you use
+    what some existing paths on your application server are
+    whether you are properly sanitizing input or not
+    how your objects are referenced internally
+    what version and brand of database is behind your front-end
+
+... the list goes on and on. Basically every design decision in a large application might be security-relevant, and almost all of them may be given away through method or module names.
+
+ https://www.owasp.org/index.php/Logging_Cheat_Sheet
+
+OR
+
+Please consider rewriting the loggers to be static and final.
+
+  static final Logger log = Logger.getLogger(myClass.class);
+
+     or
+
+  private static final Logger log = Logger.getLogger(myClass.class);
+Poor Logging Practice: Use of System Output Stream
+Analysis: Bad Practice
+
+*Example specific to Java.
+
+Using print() or println() rather than a dedicated logging facility makes it difficult to monitor the behavior of the program.
+
+Utilize the logger used elsewhere in the application to write out the info (i.e., log.info("msg here")).
+Portability Flaw: Locale Dependent Comparison
+Analysis: Suspicious
+
+If this application is used by other countries outside of the US, then there's a potential for portability issues when using toUpperCase() or toLowerCase() without specifying a locale (i.e., Local.ENGLISH).
+
+Please implement one of the SCR Recommendations to prevent such an issue.
+
+Examples:
+
+  if (myVariable.toUpperCase(Locale.ENGLISH).equals("SOMEVALUE))
+
+OR
+
+  if (myVariable.equalsIgnoreCase("SOMEVALUE"))
+Privacy Violation: Autocomplete
+
+Explicitly turn off autocomplete for the password field like "Password: <input name="password" type="password" autocomplete="off"/>" or for the entire form, whichever is most appropriate for your business context.
+
+OR
+
+Some browsers retain user input across sessions when autocompletion is enabled, which could expose sensitive information to others using the computer.
+
+Disable autocompletion on forms or sensitive inputs, such as a password field, whichever is the most applicable to your business model.  
+
+<form method="post" autocomplete="off">
+
+OR
+
+Password: <input name="password" type="password" autocomplete="off"/>
+Privacy Violation: Logging Confidential Information
+Analysis: Exploitable
+
+Logging confidential customer or workforce information can compromise user privacy and sometimes violates use-case applicable laws, regulations, and/or contracts.
+
+Logging username\password pairs is an elevated risk behavior.  Username\password pairs are Confidential information at The company, and should not be shared.  Writing them to any "normal" application log increases the probability of unauthorized access occurring and would generally not qualify "Confidential-ready" handling.
+
+Our corporate policies also require that we not log passwords.
+Privacy Violation: Heap Inspection
+Analysis: Vulnerable
+
+Sensitive data (such as passwords, social security numbers, credit card numbers, etc) stored in memory can be leaked if memory is not cleared immediately after use. Since String objects are immutable, removing the value of a String from memory can only be done by the JVM garbage collector which does not provide a reliable/predictable variable life-cycle.
+In the event of an application crash, a memory dump of the application might reveal sensitive data.
+Sensitive data should be managed in mutable formats, for example a character array.
+In this instance, the SCR Recommendations tab includes a useful code example of replacing the use of a String with a char[] array for password handling.
+Privacy Violation: Security Features, Data Flow
+Analysis: Vulnerable
+
+Sending Tax IDs to uncontrolled endpoints will result in a certain amount of leakage. Enforcing the use of effectively-configured HTTPS will resist a number of attacks against sensitive data in transit, but will not impact many endpoint malware-enabled attacks.
+Unless there is a compelling, user-oriented business rationale for sending TaxIDs to user's endpoints, this practice should be discontinued.
+
+company Corporate Privacy Policy: https://inside.thecompany.net/corp_security/docs/corp_privacy.pdf
+[page 8] "Use of Social Security Numbers (SSN?s) - The company understands the importance of appropriately safeguarding the personal information it obtains in the course of its business operations. Absent compelling business processing needs, it is our practice at The company not to disclose Social Security numbers (all or part) unless legally required. Access to Social Security numbers is restricted to those workers with a business need for such information to perform their job responsibilities. All customer account screens accessible via the Internet should delete, mask or truncate the SSN." 
+Race Condition: Singleton Member Field
+Analysis: Suspicious
+
+The common way to fix a race condition is to reduce the window of vulnerability to zero by making sure that all assumptions hold for as long as necessary.  The main strategy is to make all the relevant code execute as if the operation is a single unit, when nothing can occur while the operation is executing.
+
+One way to fix this issue is to utilize the synchronized keyword, which prevents multiple threads from running code in the same object being governed by it.  The problem with this solution is that it can have a significant impact on efficiency. The key is to keep the critical section of code as small as possible. In Java, you can apply the synchronized keyword to blocks of code instead of the entire method. 
+
+Please review the SCR recommendations for more detail on how to resolve the issue. 
+Session Fixation (Time and State, Control Flow)
+Analysis: Exploitable or Suspicious
+
+Custom authentication and/or session management schemes is a difficult and complex task.  We have a mature Oracle identity and access management stack available for a broad range of authentication and session management services, and it should be the primary choice for application architects, designers, and coders.  Applications should use the centrally managed Oracle identity and access management stack unless it is explicitly incompatible with their needs ? and even then, we strongly recommend refactoring application design or code for Oracle stack compatibility before attempting to invent a custom replacement.
+
+Some applications attempt to manage authentication and/or session via one or another of the Kerberos interfaces to native Microsoft Active Directory functionality.  There has been and continues to be a range of successful attacks against Windows Active Directory-enabled Kerberos.  As a result, this is an elevated risk practice and should be replaced with simpler and safer use of the company enterprise Oracle identity and access management stack.
+SQL Injection
+Analysis: Exploitable or Suspicious
+
+Building SQL statements dynamically gives an attacker a very simple opportunity to modify the SQL and execute arbitrary SQL commands.
+
+Please replace the dynamic SQL with either parameterized SQL or stored procs. Review the "SCR Recommendations" tab for additional information.
+Struts:  Erroneous validate() Method 
+Analysis: Exploitable
+
+A validate() method is defined that fails to call super.validate(). When a class extends one of the validation framework classes and implements custom validation logic by overriding the validate method, the super.validate() method must be called. Otherwise, the Struts validator will not work and the validation framework will be disabled for the given form.  Disabling the validation framework exposes the application to numerous types of attacks.
+
+Please utilize the super.validate() method so the validator framework works properly. More details are available under the SCR Recommendations tab.
+System Information Leak 
+Analysis: Bad Practice
+
+Write error messages with security in mind. In production environments, turn off detailed error information, such as "printStackTrace()", in favor of brief messages. The information shared by printStackTrace() could help in the planning of an attack.
+
+Restrict the generation and storage of detailed output that can help administrators and programmers diagnose problems. Be careful, debugging traces can sometimes appear in non-obvious places.
+System Information Leak:  Internal
+Analysis: Bad Practice
+
+The potential for an information leak exists when writing system data or debugging information is sent to a log file. In some cases the error message reveals the type of attack to which a system is susceptible or may reveal other information about the system.
+
+Write error messages with security in mind. In environments where there is broad access to logs, perform some type of cleansing before writing detailed error information. Please consider implementing the SCR recommendations.
+
+OR
+
+Write error messages with security in mind. In environments where there is broad access to logs, perform some type of cleansing before writing detailed error information. Try to keep the message brief. The information shared could help in the planning of an attack.
+
+Restrict the generation and storage of detailed output that can help administrators and programmers diagnose problems. Be careful, debugging traces can sometimes appear in non-obvious places.
+
+OR
+
+This idiom is likely to be within most company organization's risk appetite when the entire server/storage environment is hosted & operated within company Financial Group owned data centers. It is not, though, risk-appropriate for most 3rd-party hosting arrangements, and not for virtually any "cloud" environments.
+Keep this in mind whenever there are discussions about the hosting environment for this application.
+System Information Leak: HTML Comment in JSP
+Analysis: Bad Practice
+
+HTML comments provide an attacker with an easy source of information about a dynamically generated web page. Although the comments flagged on these pages look harmless it's good practice to use JSP comments.
+
+A simple fix is to replace HTML comments with JSP comments. JSP comments are not transmitted to the user.
+
+Example:
+
+ Replace HTML comment...
+
+<!-- TBD: this needs a security audit -->
+
+with a JSP commment...
+
+<%-- TBD: this needs a security audit --%>
+Unreleased Resource: Streams
+Analysis: Bad Practice or Reliability Issue
+
+An application could potentially fail to release system resources if an error occurs since there isn't a finally block to close and release the resources. 
+
+Most unreleased resource issues result in general software reliability problems.  However, if an attacker can intentionally trigger a resource leak, s/he may be able to launch a denial of service attack by depleting the resource pool.
+
+As stated in the SCR "Recommendations", utilizing a "finally" block to release the resources if an error occurs would be a good and quick approach to remediate the issue.
+Unreleased Resource: Database 
+Analysis: Bad Practice
+
+Most unreleased resource issues result in general software reliability problems.  However, if an attacker can intentionally trigger a resource leak, s/he may be able to launch a denial of service attack by depleting the resource pool.
+
+As stated in the SCR "Recommendations", utilizing a "finally" block to release the resources if an error occurs or the C# keyword "using" with its built-in cleanup would be good and quick approaches to remediating the issue.
+Weak XML Schema:  Unbounded Occurrences
+Analysis: Suspicious
+
+SCR is tough on denial of service/resource exhaustion risks. The overwhelming majority of the issues ranked ?high? severity were associated with a common xsd pattern, like:
+
+<xs:element
+
+name="Name"
+
+type="tns:Name"
+
+minOccurs="0"
+
+maxOccurs="unbounded" />
+
+Setting a ?maxOccurs? value to ?unbounded? can expose an application/platform to resources exhaustion and ultimately denial of service risks.
+
+Processing XML documents can be computationally expensive & consume a lot of memory. Hostile actors can take advantage of schemas that allow unbounded elements by supplying an application with a very large number elements causing the application to exhaust system resources.
+
+I don?t have a simple recommendation for this. The files appear to be generated. This idiom seems to be all over Java documentation & web services specifications going back more than a decade. Our security principles include ?defense in depth.? In this instance, one expression of that layering of defenses might be -- in order to resist the type of resource-exhaustion attack referenced above, we would be expected to go in and substitute sane maxOccurs values throughout the annotations.
+
+Oracle references for employing logic that supports the ?unbounded? approach for multivalued properties. For example, http://docs.oracle.com/javase/7/docs/api/javax/xml/bind/annotation/XmlElementRef.html and http://docs.oracle.com/javase/7/docs/api/javax/xml/bind/annotation/XmlElements.html.
+
+I don?t know if there are other, additional layers of validation & processing in the Delegation Service application that define and enforce sane ?maximums.? Thinking through that and documenting any would probably be the best starting place.
+
+The recommendations by SCR include a discussion thread on this topic that might be useful to scan through, Constrain the Number of Occurrences of Elements in your XML Schema, Roger L. Costello, http://lists.xml.org/archives/xml-dev/200508/msg00109.html.
+
+OR
+
+Setting the "maxOccurs" value to unbounded can lead to resource exhaustion and ultimately a denial of service (DoS) attack.
+
+Limit maxOccurs to a reasonable number to reduce the chances for an attacker to trigger a (DoS) attack.
+XML External Entity Injection
+Analysis: Suspicious
+
+Java applications using XML libraries are particularly vulnerable to XXE because the default settings for most Java XML parsers is to have XXE enabled. To use these parsers safely, you have to explicitly disable XXE in the parser you use.
+
+The XML processor should be configured to use a local static DTD and disallow any declared DTD included in the XML document.
+
+ If DTDs are disallowed, almost all XML entity attacks are prevented. For example,
+
+factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+Review the details under the SCR "Recommendations" tab.
+
+========================================================================
+
+XSS- reflected (if on c:out or escapexml=false):
+
+
+escapeXml should be set to true below, or just remove it completely since it?s enabled by default. 
+Otherwise the default encoding feature disabled.  
+<c:out value="${headerContent }" escapeXml="false"/>
+<c:out value="${footerContent }"  escapeXml="false"/>
+
+For the lines of code that are not using the <c:out> tag, fn:excapeXml() can be used.  
+Poor Validation can lead to XSS attacks.  
+Refer to the Output Encoding (https://docs.company.com/display/SS/Output+Encoding ) page of our Software Security Standards, Guidelines and Best Practices for more information and examples.
+
+Bean Validation is another way to ensure properties from classes contain the correct values.  
+Refer to the Bean Validation (https://docs.company.com/display/SS/Validation+Frameworks ) section of the Validation Frameworks page under Java for more information.
+
+
+Open Redirect:
+Redirect links should be sanitised and if possible specific set of legitimate URLs that users are allowed to specify and only allow users to select from a list
+
+Code Correctness: Double-Checked Locking ? 
+These are typically generated code for interacting w/COBOL.  Some alternate text for the comments:
+Classifying these issues as High is probably overblown.  These issues all stem from generated code based on COBOL. 
+One important consideration is the context in which this issue occurs. Is the code retrieving important, or sensitive information that could become tainted if thread safety issues happen? What type of information is retrieved w/these calls?
+If the code is static, where you're not regenerating it frequently, then consider making the changes recommended by SCR to eliminate Double-checked locking.
+One alternative, as recommended by SCR:
+synchronized (initializedBuffer_) {
+if (getterMap_ == null) {
+...
+...
+
+Another option is declaring the variable as volatile. 
+private static volatile java.util.HashMap getterMap_ = null;
+
+Additional References:
+https://jeremymanson.blogspot.com/2008/05/double-checked-locking.html
+https://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
+
+
+Race-condition: singleton
+The common way to fix a race condition is to reduce the window of vulnerability to zero by making sure that all assumptions hold for as long as necessary.  
+The main strategy is to make all the relevant code execute as if the operation is a single unit, when nothing can occur while the operation is executing.
+One way to fix this issue is to utilize the synchronized keyword, which prevents multiple threads from running code in the same object being governed by it.  
+The problem with this solution is that it can have a significant impact on efficiency. The key is to keep the critical section of code as small as possible. 
+In Java, you can apply the synchronized keyword to blocks of code instead of the entire method. 
+Please review the SCR recommendations for more detail on how to resolve the issue. 
+
+Critical
+XSS: Reflected ? all of these are valid vulnerabilities.  You are getting duplicates because of scanning both source and target.  You?ll want to make sure you mark the code from source.  However, it doesn?t hurt to just mark both.  The target code will be regenerated when the source is updated.  
+?         escapeXml should be set to true below, or just remove it completely since it?s enabled by default.  Otherwise the default encoding feature disabled.  
+<c:out value="${headerContent }" escapeXml="false"/>
+<c:out value="${footerContent }"  escapeXml="false"/>
+?         For the lines of code that are not using the <c:out> tag, fn:excapeXml() can be used.  
+o   Both of these may still cause XSS: Poor Validation because they don?t prevent all XSS attacks.  
+o   Refer to the Output Encoding page of our Software Security Standards, Guidelines and Best Practices for more information and examples.
+?         Bean Validation is another way to ensure properties from classes contain the correct values.  In these XSS findings, the devs could utilize Bean Validation on the loginPerson class.  
+o   Refer to the Bean Validation section of the Validation Frameworks page under Java for more information.
+
+
+Insecure Transport ? since they?re using the companyproxy this one is actually a false positive.  The companyproxy uses https by default and the constant is defined below.  
+public static final String PROXY_HOSTNAME = "companyproxy.company.com";
+
+Background from Chris Feldhacker on company Proxy:
+- The proxy server listens on a number of ports: 80, 443, 8080 (I think), maybe others.  Port 80 is the only one that matters, the others are just exposed for client-friendliness.  
+ - The initial HTTP CONNECT request that gets sent to the proxy server happens over non-SSL.  This is true no matter what proxy port you tell your client to connect to.  (Yep, connections to proxy port 443 are really non-SSL!  That?s why we tell folks to just always use port 80; avoids confusion.)
+- With the HTTP CONNECT request to the proxy server, the client will also pass the host and port of the "real" target that the client wants to connect to.  (Maybe http on port 80, maybe https on port 443.)  The proxy server establishes a TCP connecting to the target on the requested port (if allowed by WebWasher, etc.).
+- Assuming the client wanted to connect to an HTTPS address, the client then performs the SSL handshake, establishing an SSL tunnel between the client and target server.  (With the proxy server having zero visibility into the actually content / traffic at this point.)
+
+In other words, in Java code this might look like:
+   HttpHost proxy = new HttpHost("companyproxy.company.com", 80);
+   ...
+   HttpGet httpGet = new HttpGet("https://www.apache.org");
+   ...
+
+Connecting to the proxy server over non-SSL is perfectly normal and would not be a security vulnerability.
+The actual target URL would need to be reviewed to determine if it is using HTTPS.
+If not using HTTPS, this is a potential security vulnerability that would need to be reviewed.
+
+
+Open Redirect ? definitely an issue since the data in the redirect is never validated. 
+
+
+High
+Code Correctness: Double-Checked Locking ? these are typically generated code for interacting w/COBOL.  Some alternate text for the comments:
+Classifying these issues as High is probably overblown.  These issues all stem from generated code based on COBOL. 
+One important consideration is the context in which this issue occurs. Is the code retrieving important, or sensitive information that could become tainted if thread safety issues happen? What type of information is retrieved w/these calls?
+If the code is static, where you're not regenerating it frequently, then consider making the changes recommended by SCR to eliminate Double-checked locking.
+One alternative, as recommended by SCR:
+synchronized (initializedBuffer_) {
+if (getterMap_ == null) {
+...
+...
+
+Another option is declaring the variable as volatile. 
+private static volatile java.util.HashMap getterMap_ = null;
+
+Additional References:
+https://jeremymanson.blogspot.com/2008/05/double-checked-locking.html
+https://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
